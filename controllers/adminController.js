@@ -2,6 +2,7 @@ const User = require('../models/User')
 const Room = require('../models/Room')
 const Booking = require('../models/Booking')
 const Contact = require('../models/Contact')
+const User = require('../models/User')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const { validationResult } = require('express-validator')
@@ -30,39 +31,24 @@ const adminLogin = async (req, res) => {
       })
     }
 
-    // Find user by email
-    const user = await User.findByCredentials(email, password)
-
-    if (!user) {
+    // Check admin credentials against environment variables
+    if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       })
     }
 
-    // Check if user is admin
-    if (user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Admin privileges required.'
-      })
-    }
-
-    // Check if account is active
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated'
-      })
-    }
-
-    // Update last login
-    user.lastLogin = new Date()
-    user.loginAttempts = 0
-    await user.save()
-
-    // Generate JWT token
-    const token = user.generateAuthToken()
+    // Generate JWT token for admin
+    const token = jwt.sign(
+      { 
+        id: 'admin',
+        email: process.env.ADMIN_EMAIL,
+        role: 'admin'
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    )
 
     res.status(200).json({
       success: true,
@@ -70,13 +56,13 @@ const adminLogin = async (req, res) => {
       data: {
         token,
         user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          permissions: user.permissions,
-          lastLogin: user.lastLogin
+          id: 'admin',
+          firstName: 'Admin',
+          lastName: 'User',
+          email: process.env.ADMIN_EMAIL,
+          role: 'admin',
+          permissions: ['all'],
+          lastLogin: new Date()
         }
       }
     })

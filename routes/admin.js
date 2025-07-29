@@ -57,6 +57,117 @@ router.get(
   asyncHandler(getDashboardStats)
 )
 
+// Admin stats endpoint
+router.get(
+  '/stats',
+  protect,
+  authorize('admin', 'super_admin', 'manager'),
+  asyncHandler(getDashboardStats)
+)
+
+// Admin rooms endpoint
+router.get(
+  '/rooms',
+  protect,
+  authorize('admin', 'super_admin', 'manager'),
+  asyncHandler(async (req, res) => {
+    const Room = require('../models/Room')
+    const rooms = await Room.find().sort({ createdAt: -1 })
+    res.json({
+      success: true,
+      data: rooms
+    })
+  })
+)
+
+// Admin bookings endpoint
+router.get(
+  '/bookings',
+  protect,
+  authorize('admin', 'super_admin', 'manager'),
+  asyncHandler(async (req, res) => {
+    const Booking = require('../models/Booking')
+    const bookings = await Booking.find()
+      .populate('room', 'name type price')
+      .populate('user', 'firstName lastName email phone')
+      .sort({ createdAt: -1 })
+    res.json({
+      success: true,
+      data: bookings
+    })
+  })
+)
+
+// Update booking status
+router.patch(
+  '/bookings/:id',
+  protect,
+  authorize('admin', 'super_admin', 'manager'),
+  asyncHandler(async (req, res) => {
+    const Booking = require('../models/Booking')
+    const { status } = req.body
+    const booking = await Booking.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).populate('room', 'name type price').populate('user', 'firstName lastName email phone')
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      })
+    }
+    
+    res.json({
+      success: true,
+      data: booking
+    })
+  })
+)
+
+// Admin contacts endpoint
+router.get(
+  '/contacts',
+  protect,
+  authorize('admin', 'super_admin', 'manager'),
+  asyncHandler(async (req, res) => {
+    const Contact = require('../models/Contact')
+    const contacts = await Contact.find().sort({ createdAt: -1 })
+    res.json({
+      success: true,
+      data: contacts
+    })
+  })
+)
+
+// Mark contact as read
+router.patch(
+  '/contacts/:id/read',
+  protect,
+  authorize('admin', 'super_admin', 'manager'),
+  asyncHandler(async (req, res) => {
+    const Contact = require('../models/Contact')
+    const contact = await Contact.findByIdAndUpdate(
+      req.params.id,
+      { isRead: true },
+      { new: true }
+    )
+    
+    if (!contact) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contact not found'
+      })
+    }
+    
+    res.json({
+      success: true,
+      data: contact
+    })
+  })
+)
+
 router.get(
   '/analytics/revenue',
   protect,

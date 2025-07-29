@@ -1,4 +1,5 @@
 const express = require('express')
+const User = require('../models/User')
 const {
   adminLogin,
   getDashboardStats,
@@ -260,7 +261,6 @@ router.get(
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const User = require('../models/User')
     const {
       page = 1,
       limit = 10,

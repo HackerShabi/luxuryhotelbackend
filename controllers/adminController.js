@@ -1,4 +1,3 @@
-const User = require('../models/User')
 const Room = require('../models/Room')
 const Booking = require('../models/Booking')
 const Contact = require('../models/Contact')

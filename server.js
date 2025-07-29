@@ -24,10 +24,29 @@ const limiter = rateLimit({
 app.use('/api/', limiter)
 
 // CORS configuration
+const allowedOrigins = [
+  'https://luxuryhotels.vercel.app',
+  'http://localhost:3000', // for local development
+  process.env.FRONTEND_URL // from environment variable
+].filter(Boolean) // remove any undefined values
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
   credentials: true
 }))
+
+// Additional CORS headers for credentials
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Credentials', 'true')
+  next()
+})
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }))

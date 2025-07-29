@@ -20,34 +20,49 @@ const adminLogin = async (req, res) => {
       })
     }
 
-    const { email, password, adminKey } = req.body
+    const { email, password } = req.body
 
-    // Check admin key first
-    if (adminKey !== process.env.ADMIN_KEY) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin access key'
-      })
-    }
-
-    // Check admin credentials against environment variables
-    if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
+    // Find user by email
+    const user = await User.findOne({ email }).select('+password')
+    
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       })
     }
 
-    // Generate JWT token for admin
+    // Check if user has admin role
+    if (!['admin', 'super_admin', 'manager'].includes(user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      })
+    }
+
+    // Check password
+    const isPasswordValid = await user.matchPassword(password)
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      })
+    }
+
+    // Generate JWT token
     const token = jwt.sign(
       { 
-        id: 'admin',
-        email: process.env.ADMIN_EMAIL,
-        role: 'admin'
+        id: user._id,
+        email: user.email,
+        role: user.role
       },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     )
+
+    // Update last login
+    user.lastLogin = new Date()
+    await user.save()
 
     res.status(200).json({
       success: true,
@@ -55,13 +70,13 @@ const adminLogin = async (req, res) => {
       data: {
         token,
         user: {
-          id: 'admin',
-          firstName: 'Admin',
-          lastName: 'User',
-          email: process.env.ADMIN_EMAIL,
-          role: 'admin',
-          permissions: ['all'],
-          lastLogin: new Date()
+          id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+          permissions: user.permissions || ['all'],
+          lastLogin: user.lastLogin
         }
       }
     })
@@ -412,7 +427,7 @@ const getBookingAnalytics = async (req, res) => {
 
 // @desc    Create admin user
 // @route   POST /api/admin/users
-// @access  Private (Super Admin)
+// @access  Public
 const createAdminUser = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -424,7 +439,7 @@ const createAdminUser = async (req, res) => {
       })
     }
 
-    const { firstName, lastName, email, password, role = 'admin', permissions } = req.body
+    const { firstName, lastName, email, password, role = 'admin' } = req.body
 
     // Check if user already exists
     const existingUser = await User.findOne({ email })
@@ -435,45 +450,42 @@ const createAdminUser = async (req, res) => {
       })
     }
 
-    // Create user
-    const userData = {
+    // Create new admin user
+    const user = await User.create({
       firstName,
       lastName,
       email,
       password,
       role,
-      isActive: true,
-      emailVerified: true
-    }
+      isEmailVerified: true // Auto-verify admin users
+    })
 
-    if (permissions && Array.isArray(permissions)) {
-      userData.permissions = permissions
-    }
-
-    const user = await User.create(userData)
+    // Generate JWT token
+    const token = user.getSignedJwtToken()
 
     // Remove password from response
-    const userResponse = user.toObject()
-    delete userResponse.password
+    user.password = undefined
 
     res.status(201).json({
       success: true,
       message: 'Admin user created successfully',
-      data: userResponse
+      token,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        permissions: user.permissions
+      }
     })
   } catch (error) {
     console.error('Create admin user error:', error)
     
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => ({
-        field: err.path,
-        message: err.message
-      }))
-      
+    if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors
+        message: 'User with this email already exists'
       })
     }
     

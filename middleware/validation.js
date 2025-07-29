@@ -197,10 +197,7 @@ const validateAdminLogin = [
     .withMessage('Please provide a valid email'),
   body('password')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters'),
-  body('adminKey')
-    .notEmpty()
-    .withMessage('Admin key is required')
+    .withMessage('Password must be at least 6 characters')
 ]
 
 // Admin user creation validation

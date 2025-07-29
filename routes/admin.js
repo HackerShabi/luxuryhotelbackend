@@ -28,6 +28,14 @@ router.post(
   asyncHandler(adminLogin)
 )
 
+// Public admin registration
+router.post(
+  '/register',
+  validateAdminUser,
+  handleValidationErrors,
+  asyncHandler(createAdminUser)
+)
+
 // Admin key verification (simple access)
 router.post(
   '/verify-key',

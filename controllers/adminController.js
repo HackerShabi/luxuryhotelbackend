@@ -11,58 +11,25 @@ const { validationResult } = require('express-validator')
 // @access  Public
 const adminLogin = async (req, res) => {
   try {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      })
-    }
+    const { password } = req.body
 
-    const { email, password } = req.body
-
-    // Find user by email
-    const user = await User.findOne({ email }).select('+password')
-    
-    if (!user) {
+    // Simple password check
+    if (password !== 'admin123') {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid password'
       })
     }
 
-    // Check if user has admin role
-    if (!['admin', 'super_admin', 'manager'].includes(user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Admin privileges required.'
-      })
-    }
-
-    // Check password
-    const isPasswordValid = await user.matchPassword(password)
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      })
-    }
-
-    // Generate JWT token
+    // Generate JWT token for admin access
     const token = jwt.sign(
       { 
-        id: user._id,
-        email: user.email,
-        role: user.role
+        id: 'admin',
+        role: 'admin'
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: '24h' }
     )
-
-    // Update last login
-    user.lastLogin = new Date()
-    await user.save()
 
     res.status(200).json({
       success: true,
@@ -70,13 +37,9 @@ const adminLogin = async (req, res) => {
       data: {
         token,
         user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          permissions: user.permissions || ['all'],
-          lastLogin: user.lastLogin
+          id: 'admin',
+          role: 'admin',
+          permissions: ['all']
         }
       }
     })

@@ -191,13 +191,9 @@ const validateContact = [
 
 // Admin login validation
 const validateAdminLogin = [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email'),
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters')
+    .notEmpty()
+    .withMessage('Password is required')
 ]
 
 // Admin user creation validation

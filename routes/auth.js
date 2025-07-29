@@ -5,17 +5,16 @@ const crypto = require('crypto')
 const User = require('../models/User')
 const { protect, loginRateLimit } = require('../middleware/auth')
 const {
-  validateNewsletter,
-  handleValidationErrors
+  validateNewsletter
 } = require('../middleware/validation')
-const { asyncHandler, AppError, sendSuccessResponse } = require('../middleware/errorHandler')
+const { asyncHandler, AppError, sendSuccessResponse, handleValidationErrors } = require('../middleware/errorHandler')
 const { body, param } = require('express-validator')
 const nodemailer = require('nodemailer')
 
 const router = express.Router()
 
 // Configure nodemailer
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: process.env.EMAIL_PORT,
   secure: process.env.EMAIL_SECURE === 'true',

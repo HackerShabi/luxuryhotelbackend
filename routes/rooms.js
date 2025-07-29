@@ -13,10 +13,17 @@ const { protect, authorize, checkPermission } = require('../middleware/auth')
 const {
   validateRoom,
   validateRoomQuery,
-  validateObjectId,
-  handleValidationErrors
+  validateObjectId
 } = require('../middleware/validation')
-const { asyncHandler } = require('../middleware/errorHandler')
+const { asyncHandler, handleValidationErrors } = require('../middleware/errorHandler')
+
+// Debug imports
+console.log('Debug imports:', {
+  getRooms: typeof getRooms,
+  validateRoomQuery: typeof validateRoomQuery,
+  handleValidationErrors: typeof handleValidationErrors,
+  asyncHandler: typeof asyncHandler
+})
 
 const router = express.Router()
 

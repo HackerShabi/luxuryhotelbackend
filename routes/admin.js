@@ -12,10 +12,9 @@ const { protect, authorize, checkPermission, verifyAdminKey } = require('../midd
 const {
   validateAdminLogin,
   validateAdminUser,
-  validatePasswordChange,
-  handleValidationErrors
+  validatePasswordChange
 } = require('../middleware/validation')
-const { asyncHandler } = require('../middleware/errorHandler')
+const { asyncHandler, handleValidationErrors } = require('../middleware/errorHandler')
 const { body, query } = require('express-validator')
 
 const router = express.Router()

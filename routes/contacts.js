@@ -11,10 +11,9 @@ const {
 const { protect, authorize, checkPermission } = require('../middleware/auth')
 const {
   validateContact,
-  validateObjectId,
-  handleValidationErrors
+  validateObjectId
 } = require('../middleware/validation')
-const { asyncHandler } = require('../middleware/errorHandler')
+const { asyncHandler, handleValidationErrors } = require('../middleware/errorHandler')
 const { body, query, param } = require('express-validator')
 
 const router = express.Router()

@@ -164,9 +164,11 @@ const getBookingByConfirmation = async (req, res) => {
 // @access  Public
 const createBooking = async (req, res) => {
   try {
+    console.log('createBooking called with body:', JSON.stringify(req.body, null, 2));
     // Check for validation errors
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -175,7 +177,7 @@ const createBooking = async (req, res) => {
     }
 
     const {
-      roomId,
+      room,
       checkInDate,
       checkOutDate,
       numberOfGuests,
@@ -184,16 +186,20 @@ const createBooking = async (req, res) => {
       specialRequests
     } = req.body
 
-    // Validate room exists and is available
-    const room = await Room.findById(roomId)
-    if (!room) {
+    // Find the room in database
+    console.log('Looking for room with ID:', room);
+    const roomData = await Room.findById(room);
+    
+    if (!roomData) {
       return res.status(404).json({
         success: false,
         message: 'Room not found'
-      })
+      });
     }
+    
+    console.log('Room found:', roomData.name);
 
-    if (!room.isAvailable) {
+    if (!roomData.isAvailable) {
       return res.status(400).json({
         success: false,
         message: 'Room is not available'
@@ -220,7 +226,7 @@ const createBooking = async (req, res) => {
 
     // Check for conflicting bookings
     const conflictingBookings = await Booking.find({
-      room: roomId,
+      room: room,
       $or: [
         {
           checkInDate: { $lt: checkOut },
@@ -238,24 +244,36 @@ const createBooking = async (req, res) => {
     }
 
     // Check occupancy
-    if (numberOfGuests > room.maxOccupancy) {
+    const maxOccupancy = roomData.availability?.maxOccupancy || roomData.maxOccupancy || 2;
+    if (numberOfGuests > maxOccupancy) {
       return res.status(400).json({
         success: false,
-        message: `Room can accommodate maximum ${room.maxOccupancy} guests`
+        message: `Room can accommodate maximum ${maxOccupancy} guests`
       })
     }
 
     // Calculate pricing
     const numberOfNights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24))
-    const subtotal = room.pricePerNight * numberOfNights
+    console.log('roomData found:', !!roomData)
+    console.log('roomData structure:', JSON.stringify(roomData, null, 2))
+    
+    // Get price from either pricePerNight or pricing.basePrice
+    const pricePerNight = roomData.pricePerNight || roomData.pricing?.basePrice || 100
+    console.log('Using pricePerNight:', pricePerNight)
+    
+    const subtotal = pricePerNight * numberOfNights
     const taxRate = 0.12 // 12% tax
     const serviceFee = 25 // Fixed service fee
     const taxes = subtotal * taxRate
     const totalAmount = subtotal + taxes + serviceFee
 
+    // Generate booking ID
+    const bookingId = 'BK' + Date.now() + Math.random().toString(36).substr(2, 9).toUpperCase()
+
     // Create booking object
     const bookingData = {
-      room: roomId,
+      bookingId,
+      room: room,
       checkInDate: checkIn,
       checkOutDate: checkOut,
       numberOfGuests,
@@ -275,7 +293,7 @@ const createBooking = async (req, res) => {
         specialRequests: specialRequests || ''
       },
       pricing: {
-        pricePerNight: room.pricePerNight,
+        pricePerNight: pricePerNight,
         subtotal,
         taxes,
         serviceFee,
@@ -291,10 +309,24 @@ const createBooking = async (req, res) => {
       source: 'website'
     }
 
-    const booking = await Booking.create(bookingData)
+    // Create booking in database
+    const booking = new Booking(bookingData);
+    await booking.save();
+    
+    // Populate room data
+    await booking.populate('room', 'name type pricePerNight images amenities');
 
-    // Populate room details for response
-    await booking.populate('room', 'name type pricePerNight images')
+    // Emit real-time event to admin dashboard
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin-room').emit('new-booking', {
+        booking: booking,
+        message: 'New booking created',
+        timestamp: new Date()
+      });
+    }
+
+    console.log('Booking created successfully');
 
     res.status(201).json({
       success: true,
@@ -367,6 +399,15 @@ const updateBookingStatus = async (req, res) => {
 
     await booking.save()
     await booking.populate('room', 'name type pricePerNight')
+
+    // Emit real-time event for booking status update
+    const io = req.app.get('io')
+    if (io) {
+      io.to('admin-room').emit('booking-updated', {
+        booking: booking,
+        message: `Booking ${booking.bookingId} status updated to ${status}`
+      })
+    }
 
     res.status(200).json({
       success: true,

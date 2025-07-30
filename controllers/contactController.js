@@ -170,12 +170,22 @@ const createContact = async (req, res) => {
       priority = 'low'
     }
 
+    // Map inquiry types from validation to model enum
+    const inquiryTypeMap = {
+      'general': 'general_inquiry',
+      'booking': 'booking_assistance',
+      'complaint': 'complaint',
+      'compliment': 'feedback',
+      'suggestion': 'feedback',
+      'support': 'other'
+    }
+
     // Create contact submission
     const contactData = {
       name,
       email,
       phone,
-      inquiryType,
+      inquiryType: inquiryTypeMap[inquiryType] || 'general_inquiry',
       subject,
       message,
       preferredContactMethod: preferredContactMethod || 'email',
@@ -183,10 +193,19 @@ const createContact = async (req, res) => {
       priority,
       ipAddress,
       userAgent,
-      source: 'website'
+      source: 'website_contact_form'
     }
 
     const contact = await Contact.create(contactData)
+
+    // Emit real-time event for new contact
+    const io = req.app.get('io')
+    if (io) {
+      io.to('admin-room').emit('new-contact', {
+        contact: contact,
+        message: `New ${inquiryType} inquiry from ${name}`
+      })
+    }
 
     // Send confirmation email to customer
     try {

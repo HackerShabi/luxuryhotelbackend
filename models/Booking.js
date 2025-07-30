@@ -3,170 +3,114 @@ const mongoose = require('mongoose')
 const bookingSchema = new mongoose.Schema({
   bookingId: {
     type: String,
-    unique: true,
-    required: true
+    unique: true
   },
   room: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Room',
-    required: [true, 'Room reference is required']
+    ref: 'Room'
   },
   guestInfo: {
     firstName: {
       type: String,
-      required: [true, 'First name is required'],
-      trim: true,
-      maxlength: [50, 'First name cannot exceed 50 characters']
+      trim: true
     },
     lastName: {
       type: String,
-      required: [true, 'Last name is required'],
-      trim: true,
-      maxlength: [50, 'Last name cannot exceed 50 characters']
+      trim: true
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
-      lowercase: true,
-      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+      lowercase: true
     },
     phone: {
-      type: String,
-      required: [true, 'Phone number is required'],
-      match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
+      type: String
     },
     address: {
       street: {
-        type: String,
-        required: [true, 'Street address is required']
+        type: String
       },
       city: {
-        type: String,
-        required: [true, 'City is required']
+        type: String
       },
       state: {
-        type: String,
-        required: [true, 'State is required']
+        type: String
       },
       zipCode: {
-        type: String,
-        required: [true, 'Zip code is required']
+        type: String
       },
       country: {
         type: String,
-        required: [true, 'Country is required'],
         default: 'United States'
       }
     },
     specialRequests: {
-      type: String,
-      maxlength: [500, 'Special requests cannot exceed 500 characters']
+      type: String
     }
   },
   checkInDate: {
-    type: Date,
-    required: [true, 'Check-in date is required'],
-    validate: {
-      validator: function(value) {
-        return value >= new Date().setHours(0, 0, 0, 0)
-      },
-      message: 'Check-in date cannot be in the past'
-    }
+    type: Date
   },
   checkOutDate: {
-    type: Date,
-    required: [true, 'Check-out date is required'],
-    validate: {
-      validator: function(value) {
-        return value > this.checkInDate
-      },
-      message: 'Check-out date must be after check-in date'
-    }
+    type: Date
   },
   numberOfGuests: {
-    type: Number,
-    required: [true, 'Number of guests is required'],
-    min: [1, 'Number of guests must be at least 1'],
-    max: [10, 'Number of guests cannot exceed 10']
+    type: Number
   },
   numberOfNights: {
-    type: Number,
-    required: true
+    type: Number
   },
   pricing: {
     pricePerNight: {
-      type: Number,
-      required: [true, 'Price per night is required'],
-      min: [0, 'Price cannot be negative']
+      type: Number
     },
     subtotal: {
-      type: Number,
-      required: [true, 'Subtotal is required'],
-      min: [0, 'Subtotal cannot be negative']
+      type: Number
     },
     taxes: {
-      type: Number,
-      required: [true, 'Taxes amount is required'],
-      min: [0, 'Taxes cannot be negative']
+      type: Number
     },
     fees: {
       type: Number,
-      default: 0,
-      min: [0, 'Fees cannot be negative']
+      default: 0
     },
     totalAmount: {
-      type: Number,
-      required: [true, 'Total amount is required'],
-      min: [0, 'Total amount cannot be negative']
+      type: Number
     },
     currency: {
       type: String,
-      default: 'USD',
-      enum: ['USD', 'EUR', 'GBP', 'CAD', 'AUD']
+      default: 'USD'
     }
   },
   paymentInfo: {
     paymentMethod: {
-      type: String,
-      required: [true, 'Payment method is required'],
-      enum: ['credit_card', 'debit_card', 'paypal', 'bank_transfer', 'cash']
+      type: String
     },
     paymentStatus: {
       type: String,
-      required: true,
-      enum: ['pending', 'processing', 'completed', 'failed', 'refunded', 'cancelled'],
       default: 'pending'
     },
     transactionId: {
-      type: String,
-      sparse: true
+      type: String
     },
     paymentDate: {
       type: Date
     },
     cardLastFour: {
-      type: String,
-      match: [/^\d{4}$/, 'Card last four digits must be 4 numbers']
+      type: String
     }
   },
   bookingStatus: {
     type: String,
-    required: true,
-    enum: ['confirmed', 'pending', 'cancelled', 'checked_in', 'checked_out', 'no_show'],
     default: 'pending'
   },
   confirmationNumber: {
-    type: String,
-    unique: true,
-    sparse: true
+    type: String
   },
   notes: {
-    type: String,
-    maxlength: [1000, 'Notes cannot exceed 1000 characters']
+    type: String
   },
   source: {
     type: String,
-    enum: ['website', 'phone', 'email', 'walk_in', 'third_party'],
     default: 'website'
   },
   cancellation: {
@@ -178,12 +122,10 @@ const bookingSchema = new mongoose.Schema({
       type: Date
     },
     cancellationReason: {
-      type: String,
-      maxlength: [500, 'Cancellation reason cannot exceed 500 characters']
+      type: String
     },
     refundAmount: {
-      type: Number,
-      min: [0, 'Refund amount cannot be negative']
+      type: Number
     }
   },
   checkInTime: {

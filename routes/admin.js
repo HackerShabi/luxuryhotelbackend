@@ -58,6 +58,55 @@ router.post(
   }
 )
 
+// Public admin endpoints (only require admin key)
+router.get(
+  '/stats',
+  verifyAdminKey,
+  asyncHandler(getDashboardStats)
+)
+
+router.get(
+  '/rooms',
+  verifyAdminKey,
+  asyncHandler(async (req, res) => {
+    const Room = require('../models/Room')
+    const rooms = await Room.find().sort({ createdAt: -1 })
+    res.json({
+      success: true,
+      data: rooms
+    })
+  })
+)
+
+router.get(
+  '/bookings',
+  verifyAdminKey,
+  asyncHandler(async (req, res) => {
+    const Booking = require('../models/Booking')
+    const bookings = await Booking.find()
+      .populate('room', 'name type price')
+      .populate('user', 'firstName lastName email phone')
+      .sort({ createdAt: -1 })
+    res.json({
+      success: true,
+      data: bookings
+    })
+  })
+)
+
+router.get(
+  '/contacts',
+  verifyAdminKey,
+  asyncHandler(async (req, res) => {
+    const Contact = require('../models/Contact')
+    const contacts = await Contact.find().sort({ createdAt: -1 })
+    res.json({
+      success: true,
+      data: contacts
+    })
+  })
+)
+
 // Protected admin routes
 router.get(
   '/dashboard/stats',

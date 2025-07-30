@@ -182,8 +182,9 @@ const verifyAdminKey = (req, res, next) => {
   try {
     const { key } = req.query
     const { adminKey } = req.body
+    const headerKey = req.headers['x-admin-key']
     
-    const providedKey = key || adminKey
+    const providedKey = key || adminKey || headerKey
     
     if (!providedKey) {
       return res.status(401).json({

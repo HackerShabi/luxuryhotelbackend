@@ -34,7 +34,9 @@ app.use('/api/', limiter)
 
 // CORS configuration
 const allowedOrigins = [
+  'https://luxuryhotel.vercel.app',
   'https://luxuryhotels.vercel.app',
+  'https://luxuryhotelfrontend.vercel.app',
   'http://localhost:3000', // for local development
   process.env.FRONTEND_URL // from environment variable
 ].filter(Boolean) // remove any undefined values
